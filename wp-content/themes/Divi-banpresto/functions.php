@@ -4,24 +4,79 @@
      // Include mobile detect class
     include_once dirname( __FILE__ ) . '/includes/class-mobile-detect.php';
     $device = new Mobile_Detect();
+	$bp_release = '1.9.8';
 
-    add_action('wp', function () use ($device) {
-        $curPage = get_queried_object();
-       // do_action('qm/debug', $curPage);
-        if (is_object($curPage)) {
-            $pg = 'banpresto-lucca-comics-2022';
-            if ( false && $pg != $curPage->post_name) {
-                if (!$device->isMobile()&&!$device->isTablet()){
-                    wp_redirect(home_url($pg));
-                }
-            }
-        }
-    });
+		
+		add_action( 'wp', function () use ( $device ) {
+			$curPage = get_queried_object();
+			// do_action('qm/debug', $curPage);
+			if ( is_object( $curPage ) ) {
+				$pg = 'banpresto-lucca-comics-2022';
+				if ( $pg != $curPage->post_name ) {
+					if ( ! $device->isMobile() && ! $device->isTablet() ) {
+						wp_redirect( home_url( $pg ) );
+					}
+				}
+			}
+		} );
+	
+	//if ( is_front_page() ) {
+		add_action( 'wp_head', function () use ( $bp_release ) {
+			if ( !$_GET['pwa'] ) {
+				return;
+			}
+			printf( '
+                <script type="text/javascript">
+         //FROM MDN
+                const registerServiceWorker = async () => {
+  if ("serviceWorker" in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js?ver=%1$s", {
+        scope: "./",
+      });
+      if (registration.installing) {
+        console.log("Service worker installing");
+      } else if (registration.waiting) {
+        console.log("Service worker installed");
+      } else if (registration.active) {
+        console.log("Service worker active");
+        return true;
+      }
+    } catch (error) {
+      console.error(`Registration failed with ${error}`);
+    }
+  }
+};
 
+
+
+registerServiceWorker()
+    </script>
+                ', $bp_release );
+		}, PHP_INT_MIN );
+		
+	//}
 	define( 'acme_td', 'acme_td' );
 	
-	$theme = new AcmeTheme('stage');
-	$themeExtra = new AcmeThemeExtensions( acme_td );
+	$theme = new AcmeTheme('production', $bp_release);
+	$themeExtra = new AcmeThemeExtensions( acme_td , $theme->getThemeDirectory(), $theme->getThemeDirectoryUri());
+
+    //Acme customs metas
+
+    add_filter('acme_custom_metas', function ( $metas ) {
+
+            $metas['name']='Banpresto Lucca 2022';
+            $metas['scope']= '.';
+            $metas['display']='standalone';
+            $metas['start_url']= '/';
+            $metas['short_name']='Banpresto 2022';
+            $metas['description']='Edizione speciale catalogo Lucca Comics 2022';
+            $metas['background-color']='#000000';
+            $metas['theme-color']='#FFFFFF';
+
+    return $metas;
+    });
+
 
     //Settings sections colors
     add_filter('acme_bp_cat_vars', function ($vars) use ($themeExtra) {
@@ -44,8 +99,7 @@
 	
 	function bp_special_copies() {
 		$copies = [
-			50  => 'BIRD STUDIO/SHUEISHA ©2022 DRAGON BALL SUPER Film Partners',
-			//125 => 'TiteKubo/Shueisha, TV TOKYO, dentsu, Pierrot',
+			50  => 'B.S/S &copy;2022DBSFP - BIRD STUDIO/SHUEISHA ©2022 DRAGON BALL SUPER Film Partners',
 			125 => 'Hiroyuki Takei, KODANSHA/ “SHAMAN KING” Production Committee, TX',
 			127 => '2017 REKI KAWAHARA/KADOKAWA CORPORATION AMW/SAO-A Project',
 			128 => 'Tite Kubo/Shueisha, TV TOKYO, dentsu, Pierrot'
@@ -89,20 +143,18 @@
 	    $logos = [
 		    'one-piece'          => [
 			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/one_piece_logo.png',
-			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/toei_logo-W.png'
+			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/TOEI_LOGO-small2.png'
 		    ],
 		    'one-piece-film-red' => [
 			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/one_piece_film_red_logo.png',
-			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/toei_logo-W.png'
+			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/TOEI_LOGO-small2.png'
 		    ],
 		    'naruto'             => [
 			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/Naruto_Shippuden_logo.png',
 		    ],
 		    'dragon-ball'        => [
-			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/dragonball_Z_logo.png',
-			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/Dragonball_GT_logo.png',
 			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/dragonball_super_logo.png',
-			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/toei_logo-W.png'
+			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/TOEI_LOGO-small2.png'
 		    ],
 		    'sailor-moon'        => [
 			    'https://www.banprestolucca2022.com/wp-content/uploads/2022/10/sailor_moon_logo.png'
@@ -140,6 +192,19 @@
 		    'spy-x-family'       => [ '' ]
 	    ];
 		
+		
+		add_filter( 'bp-cached', function ( $res ) use ( $logos ) {
+			foreach ( $logos as $array ) {
+				if ( ! empty( $array ) ) {
+					foreach ( $array as $item ) {
+						$res[] = $item;
+					}
+				}
+			}
+			
+			return $res;
+		} );
+		
         return apply_filters('bp_logo', $arr, $logos);
     }
 
@@ -164,7 +229,6 @@
 		    if ( $object->slug == 'dragon-ball' ) {
 			    $args['orderby'] = 'menu_order';
 		    }
-		    
 	    }
         
         return $args;
@@ -176,7 +240,7 @@
 	
 	add_filter( 'theme_styles', function ( $styles ) {
 		$styles['acme-scss'] = '/css/main.css';
-		$styles['acme-slick'] = '/css/slick.css';
+		//$styles['acme-slick'] = '/css/slick.css';
         
 		return $styles;
 	}, 10, 1 );
@@ -189,27 +253,83 @@
 		
 		return $handles;
 	} );
-	
+
+
 	add_filter( 'acme_custom_scripts', function ( $args, $environment ) {
-		$args['acme-slick'] = [
+		/*$args['acme-slick'] = [
 			'src' => '/js/slick.min.js',
 			'dep' => [ 'jquery' ]
-		];
+		];*/
 		$args['acme-main'] = [
 			'src' => '/js/main.js',
-			'dep' => [ 'jquery', 'acme-slick' ]
+			'dep' => [ 'jquery'/*, 'acme-slick'*/ ]
 		];
+		/*$args['service-worker'] = [
+			'src' => home_url('/sw.js'),
+			'dep' => []
+		];*/
 
 		return $args;
 	}, 10, 2 );
 	
 	
 	add_action( 'wp_print_styles', function () {
-		wp_enqueue_style( 'google-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap' );
+		//wp_enqueue_style( 'google-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;
+		//0,700;1,400;1,500;1,700&display=swap' );
 	} );
-	
+
+
 	add_action( 'wp_head', [ $theme, 'wp_head' ], 1 );
 	add_action( 'wp_print_styles', [ $theme, 'wp_enqueue_styles' ] );
 	add_action( 'wp_enqueue_scripts', [ $theme, 'wp_enqueue_scripts' ] );
 	add_action( 'after_setup_theme', [ $theme, 'after_setup_theme' ] );
+	add_action( 'get_footer', [ $themeExtra, 'create_cache' ], 90 );
 	
+	add_filter( 'bp-cached', function ( $ar ) {
+		$handle = opendir( dirname( __FILE__ ) );
+		$basename = 'https://www.banprestolucca2022.com/wp-content/themes/Divi-banpresto/fonts/';
+		while (false !== ($entry = readdir($handle))) {
+			if ( strpos( $entry, 'woff2' ) ) {
+				$ar[] = $basename . $entry;
+			}
+		}
+		
+		return $ar;
+	}, 1 );
+	
+	
+	//Remove JQuery migrate
+	
+	add_action( 'wp_default_scripts', 'remove_jquery_migrate' );
+	function remove_jquery_migrate( $scripts ) {
+		if ( ! is_admin() && isset( $scripts->registered['jquery'] ) ) {
+			$script = $scripts->registered['jquery'];
+			if ( $script->deps ) {
+// Check whether the script has any dependencies
+				
+				$script->deps = array_diff( $script->deps, array( 'jquery-migrate' ) );
+			}
+		}
+	}
+	
+	
+	/** NOTES
+	 *
+	 */
+/*
+ // Verifichiamo se il browser con cui l’utente sta navigando è
+        //ha già attivo un Service Worker
+        if ("serviceWorker" in navigator) {
+            if (navigator.serviceWorker.controller) {
+                console.log("Service Worker attivo trovato. Nessuna necessità di registrarne uno.");
+            } else {
+                // Registriamo il Service Worker se non attivo
+                navigator.serviceWorker.register("/sw.js?ver=%1$s", {
+                    scope: "./"
+                })
+                    .then(function (reg) {
+                        console.log("Un nuovo Service Worker registrato per lo scope: " + reg.scope);
+                    });
+            }
+        }
+ * */

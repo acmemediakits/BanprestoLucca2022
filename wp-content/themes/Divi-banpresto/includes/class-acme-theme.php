@@ -13,7 +13,17 @@
 			$this->version = $version;
 			$this->initTheme();
 		}
-		
+
+        public function getThemeDirectory(){
+
+            return $this->theme_directory;
+        }
+
+        public function getThemeDirectoryUri(){
+
+            return $this->theme_directory_uri;
+        }
+
 		private function initTheme() {
 			$this->theme_directory = get_stylesheet_directory();
 			$split = preg_split( '/\//', $this->theme_directory );
@@ -21,7 +31,7 @@
 			$split = preg_split( '/-/', $theme_name );
 			$myname = end( $split );
 			$this->theme_directory_uri = sprintf( '%s-%s', get_template_directory_uri(), $myname );
-			//do_action( 'qm/debug', $this->theme_directory_uri );
+			//do_action( 'qm/debug', [$this->theme_directory_uri, $this->theme_directory] );
 		}
 		
 		public function get_options () {
@@ -40,6 +50,7 @@
 				return $styles;
 			} );
 			
+			print '<link rel="manifest" href="/manifest.json">';
 			add_filter('acme_custom_metas', function ( $metas ) {
 				//$metas['acme_is_mobile'] = $this->isMobile();
 				
@@ -76,6 +87,7 @@
 		}
 		
 		public function wp_enqueue_scripts () {
+
 			$ver = $this->environment == 'production' ? $this->version : time();
 			$arScripts = $this->wp_register_scripts();
 			foreach ( $arScripts as $handle => $array ) {
@@ -85,10 +97,19 @@
 				if (str_starts_with($array['src'], 'http')) {
 					$path = $array['src'];
 				}
+				add_filter( 'bp-cached', function ( $res ) use ( $path ) {
+					$res[] = $path;
+					
+					return $res;
+				}, 1 );
 				//end release
 				wp_register_script( $handle, $path, $array['dep'], $ver, true );
 			}
-			
+
+            wp_localize_script( 'acme-main',
+                'bpCached',
+                apply_filters('bp-cached',[])
+            );
 			foreach ( $handles as $script ) {
 				wp_enqueue_script( $handle );
 			}
@@ -103,7 +124,13 @@
 			$ver = $this->environment == 'production' ? $this->version : time();
 			$styles = $this->theme_styles();
 			foreach ( $styles as $handle => $file ) {
-				wp_register_style( $handle, $this->theme_directory_uri . $file, [], $ver, 'all' );
+				$path = $this->theme_directory_uri . $file;
+				add_filter( 'bp-cached', function ( $res ) use ( $path ) {
+					$res[] = $path;
+					
+					return $res;
+				}, 1 );
+				wp_register_style( $handle, $path, [], $ver, 'all' );
 				wp_enqueue_style( $handle );
 			}
 			

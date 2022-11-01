@@ -1,3 +1,4 @@
+@charset "UTF-8";
 body {
   background-color: #000000;
 }
@@ -370,7 +371,7 @@ a.arrow-back {
   margin-bottom: 0 !important;
 }
 
-/*------------- section-1 ---------*/
+/*------------- section ---------*/
 #main-content .container {
   width: 100% !important;
   margin: 0 auto !important;
@@ -631,17 +632,50 @@ ul.products li.product_cat-dragon-ball:first-child a {
   width: 100%;
   align-items: flex-end;
 }
-ul.products li.product_cat-dragon-ball:first-child a .bgr::before {
+ul.products li.product_cat-dragon-ball:first-child a .title-container::before {
   content: "";
-  background-image: url(https://www.banprestolucca2022.com/wp-content/uploads/2022/10/dragonball_super_logo.png);
-  background-size: contain;
-  width: 30vw;
-  max-width: 240px;
-  height: 30vw;
-  position: absolute;
-  right: 50px;
+  background-image: url(https://www.banprestolucca2022.com/wp-content/uploads/2022/09/dragon_ball_super_hero-1.png);
+  background-size: cover;
+  width: 210px;
+  max-width: 210px;
+  height: 90px;
   background-repeat: no-repeat;
-  top: 25%;
+  display: block;
+}
+@media (max-width: 576px) {
+  ul.products li.product_cat-dragon-ball:first-child a .title-container::before {
+    width: 160px;
+    max-width: 160px;
+    height: 70px;
+  }
+}
+@media (max-width: 414px) {
+  ul.products li.product_cat-dragon-ball:first-child a .title-container::before {
+    width: 120px;
+    max-width: 120px;
+    height: 50px;
+  }
+}
+ul.products li.product_cat-dragon-ball:first-child a .title-container {
+  padding: 110px 50px 20px 25px;
+}
+@media (max-width: 414px) {
+  ul.products li.product_cat-dragon-ball:first-child a .title-container {
+    padding: 110px 10px 20px 10px;
+  }
+}
+ul.products li.product_cat-dragon-ball:first-child a .title-container h2::before {
+  content: "ⓒB.S/S ⓒ2022DBSFP";
+  background-size: contain;
+  background-repeat: no-repeat;
+  font-size: 9px;
+  display: block;
+  margin-bottom: 15px;
+}
+@media (max-width: 414px) {
+  ul.products li.product_cat-dragon-ball:first-child a .title-container h2::before {
+    font-size: 8px;
+  }
 }
 ul.products li.product_cat-dragon-ball:first-child a .image-container {
   width: 50vw;
@@ -1175,6 +1209,7 @@ div.bpcopyrights {
   margin-bottom: 20px;
 }
 
+/*------------- footer ---------*/
 #footer-bottom {
   display: none;
 }

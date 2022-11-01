@@ -2,8 +2,18 @@
 	
 	class AcmeThemeExtensions {
 		public $textdomain;
-		public function __construct($textdomain) {
+        private $json_cache;
+        private $sw_cache;
+
+		public function __construct($textdomain, $theme_directory, $the_directory_uri) {
 			$this->textdomain = $textdomain;
+            $this->theme_directory = $theme_directory;
+            $this->theme_directory = sprintf( '%s%s', $this->theme_directory, '/' );
+            $this->theme_directory_uri = $the_directory_uri;
+            $this->theme_directory_uri = sprintf( '%s%s', $this->theme_directory_uri, '/' );
+			$this->json_cache = sprintf( '%s/pwa.json', ABSPATH );
+            $this->sw_cache = $this->theme_directory_uri . 'js/sw.js';
+
 		}
 		
 		public function product_vars () {
@@ -16,7 +26,6 @@
 		}
 		
 		public function init_hooks () {
-			
 			//Added body class
 			add_filter( 'body_class', [ $this, 'body_classes' ] );
 			//Products images
@@ -83,7 +92,7 @@
 				
 				$str_copy = bp_copyrights();
 				if ($str_copy !== ''){
-					printf('<div class="bpcopyrights">&copy;%s </div>', $str_copy);}
+					printf('<div class="bpcopyrights">&copy;%s</div>', $str_copy);}
 			});
 			
 			// Tabs, upsells and related products
@@ -356,5 +365,170 @@
 		public function color($color){
 			return sprintf('color-%s', $color);
 		}
-		
-	}
+
+        public function pwa_cache()
+        {
+            
+            //Get all products
+            $args = [
+                'post_type' => 'product',
+                'post_status' => 'publish',
+                'posts_per_page' => -1
+            ];
+
+            $product_query = new WP_Query( $args );
+
+            while ( $product_query->have_posts() ) {
+                $product_query->the_post();
+                $id = get_the_ID();
+                $this->pages[]=get_the_permalink();
+                $this->pages[] = get_the_post_thumbnail_url($id, [600, 600]);
+                $this->pages[] = get_the_post_thumbnail_url($id, 'full');
+            }
+
+            wp_reset_postdata();
+
+            //Get all categories
+            $args = [
+                'taxonomy' => 'product_cat',
+                'hide_empty' => true];
+
+            $terms = get_terms($args );
+
+            foreach ($terms as $term){
+                $this->pages[] = get_category_link($term);
+            }
+
+            wp_reset_postdata();
+
+            add_filter('bp-cached', function ($ar) {
+                foreach ($this->pages as $page) {
+                    $ar[] = $page;
+                }
+               // do_action('qm/debug', $ar);
+                return $ar;
+            });
+			$this->pwa_scripts();
+
+        }
+
+        public function pwa_scripts(){
+            /*if (file_exists($this->json_cache)){
+                return;
+            }*/
+            // Get all loaded Styles (CSS) and Scripts (js)
+            $this->script = [];
+
+            global $wp_styles, $wp_scripts;
+
+            foreach( $wp_styles->registered as $obj ) {
+                if (!is_bool($obj->src) || !empty($obj->src)) {
+                    $this->script[] = str_starts_with($obj->src, 'http') ? $obj->src : home_url($obj->src);
+                }
+            }
+
+            foreach( $wp_scripts->registered as $obj ) {
+                if (!is_bool($obj->src) || !empty($obj->src)) {
+                    $this->script[] = str_starts_with($obj->src, 'http') ? $obj->src : home_url($obj->src);
+                }
+            }
+
+            add_filter('bp-cached', function ($ar) {
+                foreach ($this->script as $s) {
+                    $ar[] = $s;
+                }
+                /*do_action('qm/debug', $this->theme_directory_uri);
+                do_action('qm/debug', $ar);*/
+
+                return $ar;
+            });
+        }
+
+        public function create_cache()
+        {
+            $check = true;
+	
+            if (!file_exists(ABSPATH .'/sw.js')) {
+	
+	            $this->pwa_cache();
+	            $resources = array_unique( apply_filters( 'bp-cached', [] ) );
+	            $exclusion = [
+					'stats.wp.com',
+					'maps.googleapis.com',
+					'woocommerce-blocks',
+					'filled-cart-block.js',
+					'cart-order-summary-subtotal-block.js',
+					'cart-order-summary-taxes-block.js'
+	            ];
+	            foreach ( $resources as $k => $resource ) {
+		            if ( ! str_starts_with( $resource, 'https://www.banprestolucca2022.com/' ) ) {
+			            unset( $resources[ $k ] );
+		            }
+		            foreach ( $exclusion as $needle ) {
+			            if ( strpos( $resource, $needle ) ) {
+				            unset( $resources[ $k ] );
+			            }
+		            }
+				}
+                $check = false;
+                $cache = [];
+	            $handle = fopen( 'sw.js', 'w' );
+	
+	            $fcontent = sprintf( '
+    const cacheName = "pwabuilder-precache";
+    const precacheFiles = ["%s"];
+
+    self.addEventListener("install", (e) => {
+        //self.skipWaiting();
+        e.waitUntil( (async() => {
+            const cache = await caches.open(cacheName);
+            await cache.addAll(precacheFiles);
+        })());
+    });
+
+  self.addEventListener("activate", (e) => {
+        e.waitUntil(caches.keys().then((keyList) => {
+	    return Promise.all(keyList.map((key) => {
+	      if (key === cacheName) { return; }
+	      return caches.delete(key);
+	    }));
+	  }));
+	});
+
+   self.addEventListener("fetch", (e) => {
+      if (e.request.method !== "GET") return;
+	  e.respondWith((async () => {
+	    const r = await caches.match(e.request);
+	    console.log(`[Service Worker] Fetching resource: ${e.request.url}`);
+	    if (r) { return r; }
+	    const response = await fetch(e.request);
+	    const cache = await caches.open(cacheName);
+	    console.log(`[Service Worker] Caching new resource: ${e.request.url}`);
+	    cache.put(e.request, response.clone());
+	    return response;
+	  })());
+	});
+',
+		            implode( '","', $resources )
+	            );
+	                
+	                
+	                //json_encode(apply_filters('bp-cached', $cache));
+
+                if (!empty(fwrite($handle, $fcontent))) {
+                    $check = true;
+                }
+                fclose($handle);
+            }
+            if ($check) {
+
+                
+                //enqueue sw.js
+                //do_action('qm/debug', $this->sw_cache);
+                //wp_enqueue_script('sw-js', $this->sw_cache, [], '1.0', true);
+            }
+
+        }
+
+    }
+

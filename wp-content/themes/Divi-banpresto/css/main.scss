@@ -1,4 +1,6 @@
 // Small tablets and large smartphones (landscape view)
+$screen-mc-max: 414px;
+
 $screen-sm-max: 576px;
 
 // Small tablets (portrait view)
@@ -29,6 +31,12 @@ $purple: #A80767;
 // Small devices
 @mixin sm {
   @media (max-width: #{$screen-sm-max}) {
+    @content;
+  }
+}
+
+@mixin mc {
+  @media (max-width: #{$screen-mc-max}) {
     @content;
   }
 }
@@ -462,7 +470,7 @@ a.arrow-back {
 }
 
 
-/*------------- section-1 ---------*/
+/*------------- section ---------*/
 
 #main-content .container {
   width: 100% !important;
@@ -693,22 +701,52 @@ ul.products {
 
       &.product_cat-dragon-ball:first-child {
         grid-area: header;
+
         a {
           flex-direction: row;
           width: 100%;
           align-items: flex-end;
-        .bgr::before {
+
+          .title-container::before {
           content: "";
-          background-image: url(https://www.banprestolucca2022.com/wp-content/uploads/2022/10/dragonball_super_logo.png);
-          background-size: contain;
-          width: 30vw;
-          max-width: 240px;
-          height: 30vw;
-          position: absolute;
-          right: 50px;
-          background-repeat: no-repeat;
-          top: 25%;
+          background-image: url(https://www.banprestolucca2022.com/wp-content/uploads/2022/09/dragon_ball_super_hero-1.png);
+            background-size: cover;
+            width: 210px;
+            max-width: 210px;
+            height: 90px;
+            background-repeat: no-repeat;
+            display: block;
+            @include sm {
+              width: 160px;
+              max-width: 160px;
+              height: 70px;
+            }
+
+            @include mc {
+              width: 120px;
+              max-width: 120px;
+              height: 50px;
+            }
         }
+
+          .title-container {
+            padding:110px 50px 20px 25px;
+            @include mc {
+              padding:110px 10px 20px 10px;
+            }
+          }
+
+          .title-container h2::before {
+            content: "ⓒB.S/S ⓒ2022DBSFP";
+            background-size: contain;
+            background-repeat: no-repeat;
+            font-size: 9px;
+            display: block;
+            margin-bottom: 15px;
+            @include mc {
+              font-size: 8px;
+            }
+          }
 
           .image-container{
             width: 50vw;
@@ -1344,6 +1382,8 @@ div.bpcopyrights {
   line-height: 22px;
   margin-bottom: 20px;
 }
+
+/*------------- footer ---------*/
 
 #footer-bottom {
   display: none;
