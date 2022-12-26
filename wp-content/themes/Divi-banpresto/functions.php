@@ -13,7 +13,7 @@
 			if ( is_object( $curPage ) ) {
 				$pg = 'banpresto-lucca-comics-2022';
 				if ( $pg != $curPage->post_name ) {
-					if ( ! $device->isMobile() && ! $device->isTablet() ) {
+					if (false && ! $device->isMobile() && ! $device->isTablet() ) {
 						wp_redirect( home_url( $pg ) );
 					}
 				}
